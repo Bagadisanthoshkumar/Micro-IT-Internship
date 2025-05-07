@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4f46e5">
+    <title>India Weather App - Search</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        /* Animations */
+        @keyframes slideIn { 
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes floatUpDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes cloudMove {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100vw); }
+        }
+
+        /* Animation Classes */
+        .animate-slide-in { animation: slideIn 0.8s ease-out; }
+        .animate-float { animation: floatUpDown 3s ease-in-out infinite; }
+
+        /* Weather App Styling */
+        body {
+            background: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed, 
+                        linear-gradient(to bottom right, #60a5fa, #4f46e5, #a855f7);
+            background-size: cover;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+            position: relative;
+            overflow-x: hidden;
+            transition: background-image 0.5s ease;
+        }
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 10;
+        }
+        .cloud {
+            position: absolute;
+            opacity: 0.5;
+            animation: cloudMove linear infinite;
+            z-index: 0;
+        }
+
+        /* Glass Morphism Effects */
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Shimmer Effect */
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        /* Graphic Model Buttons */
+        .graphic-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            display: inline-table;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .graphic-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .graphic-btn.active {
+            background: rgba(99, 102, 241, 0.5);
+            border-color: rgba(99, 102, 241, 0.8);
+        }
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        button.active {
+            background: rgba(99, 102, 241, 0.5);
+            border-color: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .main-container { padding: 1rem; }
+            .glass { margin: 0.5rem; }
+            .graphic-btn { padding: 0.4rem 0.8rem; font-size: 0.875rem; }
+        }
+
+        /* Input and Select Styles */
+        .custom-input, .custom-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .custom-input:focus, .custom-select:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            outline: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-0">
+    <!-- Weather background elements container -->
+    <div id="weatherBackground" class="fixed inset-0 z-0 overflow-hidden"></div>
+
+    <!-- Main container -->
+    <div class="main-container w-full max-w-lg z-10">
+        <div class="glass rounded-2xl shadow-2xl p-6 animate-slide-in">
+            <div class="flex items-center justify-center mb-6">
+                <i class="fas fa-cloud-sun text-yellow-300 text-4xl mr-3 animate-float"></i>
+                <h1 class="text-3xl md:text-4xl font-extrabold text-white text-center drop-shadow-md">India Weather App</h1>
+            </div>
+            
+            <!-- Search section -->
+            <div class="flex flex-col gap-4">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="relative flex-1">
+                        <input id="cityInput" type="text" placeholder="Enter city name" 
+                            class="w-full p-3 pl-10 rounded-lg custom-input focus:outline-none focus:ring-2 focus:ring-indigo-400 transition duration-300 text-white placeholder-gray-200">
+                        <i class="fas fa-search absolute left-3 top-3.5 text-white opacity-70"></i>
+                    </div>
+                    <button id="searchBtn" class="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300 flex items-center justify-center">
+                        <i class="fas fa-search-location mr-2"></i>Search
+                    </button>
+                </div>
+                
+                <select id="citySelect" class="p-3 rounded-lg custom-select focus:outline-none focus:ring-2 focus:ring-indigo-400 transition duration-300 text-white">
+                    <option value="">Select a Popular City</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Mumbai">Mumbai</option>
+                    <option value="Kolkata">Kolkata</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Bangalore">Bangalore</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                    <option value="Ahmedabad">Ahmedabad</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Jaipur">Jaipur</option>
+                    <option value="Lucknow">Lucknow</option>
+                    <option value="Kochi">Kochi</option>
+                    <option value="Shimla">Shimla</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Varanasi">Varanasi</option>
+                </select>
+            </div>
+
+            <!-- Graphic model selection -->
+            <div class="mt-4">
+                <div class="glass rounded-xl p-4">
+                    <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                        <i class="fas fa-paint-brush mr-2"></i>Weather Theme
+                    </h3>
+                    <div id="graphicModels" class="flex flex-wrap gap-2 justify-center">
+                        <button class="graphic-btn active" data-model="sunny">
+                            <i class="fas fa-sun"></i>Sunny
+                        </button>
+                        <button class="graphic-btn" data-model="cloudy">
+                            <i class="fas fa-cloud"></i>Cloudy
+                        </button>
+                        <button class="graphic-btn" data-model="rainy">
+                            <i class="fas fa-cloud-showers-heavy"></i>Rainy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const elements = {
+            citySelect: document.getElementById('citySelect'),
+            cityInput: document.getElementById('cityInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            weatherBackground: document.getElementById('weatherBackground'),
+            graphicModels: document.getElementById('graphicModels')
+        };
+
+        // Graphic model configurations
+        const graphicModels = {
+            sunny: {
+                background: 'url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed, linear-gradient(to bottom right, #facc15, #f97316)'
+            },
+            cloudy: {
+                background: 'url("https://images.unsplash.com/photo-1531147646552-3b2c6c8b1bfa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed, linear-gradient(to bottom right, #94a3b8, #4b5563)'
+            },
+            rainy: {
+                background: 'url("https://images.unsplash.com/photo-1519692933481-e162a57d6721?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80") no-repeat center center fixed, linear-gradient(to bottom right, #0284c7, #1e3a8a)'
+            }
+        };
+
+        // Create clouds
+        function createClouds() {
+            elements.weatherBackground.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const cloud = document.createElement('i');
+                cloud.className = 'fas fa-cloud cloud';
+                cloud.style.fontSize = `${Math.random() * 30 + 20}px`;
+                cloud.style.top = `${Math.random() * 40 + 10}%`;
+                cloud.style.animationDuration = `${Math.random() * 30 + 20}s`;
+                cloud.style.animationDelay = `${Math.random() * 5}s`;
+                elements.weatherBackground.appendChild(cloud);
+            }
+        }
+
+        // Update graphic model
+        function updateGraphicModel(model) {
+            document.body.style.background = graphicModels[model].background;
+            const buttons = elements.graphicModels.querySelectorAll('.graphic-btn');
+            buttons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.model === model);
+            });
+            createClouds();
+        }
+
+        // Navigate to weather page
+        function navigateToWeather(city) {
+            if (city) {
+                window.location.href = `weather.html?city=${encodeURIComponent(city)}`;
+            }
+        }
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
+        // Event listeners
+        function initializeEventListeners() {
+            elements.searchBtn.addEventListener('click', () => {
+                const city = elements.cityInput.value.trim() || elements.citySelect.value;
+                navigateToWeather(city);
+            });
+
+            elements.cityInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const city = elements.cityInput.value.trim();
+                    navigateToWeather(city);
+                }
+            });
+
+            elements.citySelect.addEventListener('change', () => {
+                const city = elements.citySelect.value;
+                navigateToWeather(city);
+            });
+
+            elements.graphicModels.addEventListener('click', (e) => {
+                const btn = e.target.closest('.graphic-btn');
+                if (btn) {
+                    const model = btn.dataset.model;
+                    updateGraphicModel(model);
+                }
+            });
+        }
+
+        // Initialize
+        function init() {
+            initializeEventListeners();
+            createClouds();
+            updateGraphicModel('sunny'); // Default model
+        }
+
+        init();
+    </script>
+</body>
+</html>

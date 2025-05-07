@@ -1,0 +1,804 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>India Weather App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <style>
+        /* Animations */
+        @keyframes slideIn { 
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes flipIn {
+            from { transform: perspective(400px) rotateY(90deg); opacity: 0; }
+            to { transform: perspective(400px) rotateY(0); opacity: 1; }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes cloudMove {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(100vw); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes rainDrop {
+            0% { transform: translateY(-10px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0.3; }
+        }
+        @keyframes floatUpDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        @keyframes slideFade {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Animation Classes */
+        .animate-slide-in { animation: slideIn 0.8s ease-out; }
+        .animate-flip-in { animation: flipIn 0.6s ease-out; }
+        .animate-pulse { animation: pulse 1.5s infinite; }
+        .animate-fade-in { animation: fadeIn 1s ease-out; }
+        .animate-float { animation: floatUpDown 3s ease-in-out infinite; }
+        .slide-active { animation: slideFade 0.5s ease-out; }
+
+        /* Weather App Styling */
+        body {
+            transition: background-image 1.5s ease;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ffffff;
+        }
+        .main-container {
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            padding: 1.5rem;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        .cloud {
+            position: absolute;
+            opacity: 0.6;
+            animation: cloudMove linear infinite;
+            z-index: 0;
+        }
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
+            z-index: 0;
+        }
+        .city-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .city-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        .weather-icon {
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
+        }
+
+        /* Glass Morphism Effects */
+        .glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(7px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Shimmer Effect */
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .weather-details { grid-template-columns: 1fr !important; }
+            .main-container { padding: 1rem; }
+            .glass { margin: 0.5rem; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.5); }
+
+        /* Input and Select Styles */
+        .custom-input, .custom-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .custom-input:focus, .custom-select:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+            outline: none;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            position: relative;
+            width: 100%;
+            height: 16rem; /* h-64 */
+            overflow: hidden;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .slider-container:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .slide.active {
+            opacity: 1;
+        }
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .slider-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .slider-btn:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .slider-btn.prev { left: 1rem; }
+        .slider-btn.next { right: 1rem; }
+        .slider-dots {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+        }
+        .slider-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .slider-dot.active {
+            background: #ffffff;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-600 flex items-center justify-center p-0 relative overflow-hidden">
+    <!-- Weather background elements container -->
+    <div id="weatherBackground" class="fixed inset-0 z-0 overflow-hidden"></div>
+
+    <!-- Rain container (hidden by default) -->
+    <div id="rainContainer" class="fixed inset-0 z-0 hidden"></div>
+<!-- Main container -->
+<div class="main-container">
+    <!-- Back to Search Button -->
+    <div class="mb-4">
+        <a href="index.html" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Search
+        </a>
+    </div>
+
+        
+        <!-- Content area with flexbox for responsive layout -->
+        <div class="flex flex-col lg:flex-row gap-4">
+            <!-- Weather information section -->
+            <div id="weatherInfo" class="flex-1 text-white"></div>
+            
+            <!-- Location information with slider -->
+            <div id="locationInfo" class="flex-1 hidden animate-fade-in">
+                <div class="glass rounded-xl p-4 h-full">
+                    <div class="text-center mb-3">
+                        <h3 class="text-xl font-semibold text-white flex items-center justify-center">
+                            <i class="fas fa-map-marker-alt mr-2 text-red-300"></i>Location Information
+                        </h3>
+                    </div>
+                    <div class="glass-card rounded-lg p-4 border border-white border-opacity-20">
+                        <div id="cityDescription" class="text-white text-sm mb-4 leading-relaxed"></div>
+                        
+                        <div class="flex flex-col space-y-3">
+                            <div class="flex items-center text-sm text-white mb-2">
+                                <i class="fas fa-info-circle mr-2 text-blue-300"></i>
+                                <span id="stateName" class="opacity-90"></span>
+                            </div>
+                            <div class="flex items-center text-sm text-white mb-2">
+                                <i class="fas fa-landmark mr-2 text-yellow-300"></i>
+                                <span id="attractions" class="opacity-90"></span>
+                            </div>
+                            <div class="flex items-center text-sm text-white">
+                                <i class="fas fa-temperature-high mr-2 text-red-300"></i>
+                                <span id="climate" class="opacity-90"></span>
+                            </div>
+                        </div>
+                        
+                        <div id="sliderContainer" class="slider-container mt-4" role="region" aria-label="City images slideshow">
+                            <div id="slides" class="relative w-full h-full"></div>
+                            <button id="prevBtn" class="slider-btn prev" aria-label="Previous slide">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button id="nextBtn" class="slider-btn next" aria-label="Next slide">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                            <div id="sliderDots" class="slider-dots"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent searches section -->
+        <div id="recentSearches" class="mt-4 hidden">
+            <div class="glass rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-white mb-3 flex items-center">
+                    <i class="fas fa-history mr-2"></i>Recent Searches
+                </h3>
+                <div id="recentSearchesList" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const apiKey = 'e396841089c6e1fc575ab696bee6c69c';
+        const fallbackMapImage = 'https://via.placeholder.com/400x320?text=No+Map+Available';
+
+        // DOM Elements
+        const elements = {
+            citySelect: document.getElementById('citySelect'),
+            cityInput: document.getElementById('cityInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            weatherInfo: document.getElementById('weatherInfo'),
+            locationInfo: document.getElementById('locationInfo'),
+            cityDescription: document.getElementById('cityDescription'),
+            stateName: document.getElementById('stateName'),
+            attractions: document.getElementById('attractions'),
+            climate: document.getElementById('climate'),
+            sliderContainer: document.getElementById('sliderContainer'),
+            slidesContainer: document.getElementById('slides'),
+            prevBtn: document.getElementById('prevBtn'),
+            nextBtn: document.getElementById('nextBtn'),
+            sliderDots: document.getElementById('sliderDots'),
+            weatherBackground: document.getElementById('weatherBackground'),
+            rainContainer: document.getElementById('rainContainer'),
+            recentSearches: document.getElementById('recentSearches'),
+            recentSearchesList: document.getElementById('recentSearchesList')
+        };
+
+        // Enhanced city information database with slider images
+        const cityData = {
+            Delhi: {
+                state: 'Delhi (National Capital Territory)',
+                description: 'Delhi is the capital of India and an important political, cultural, and commercial center. It is known for its mix of historic monuments like the Red Fort, Qutub Minar, and modern architecture. Delhi serves as the seat of all three branches of the Government of India.',
+                attractions: 'Red Fort, India Gate, Qutub Minar, Lotus Temple',
+                climate: 'Humid subtropical with very hot summers and mild winters',
+                mapImage: 'https://www.google.com/maps/vt/data=_YFzxH6MlanmppAjZY9BP3EDjm84CE-LxEkgPouhQGESKBuPEFrVI3ejduSE2XO0ODac8kYsBoYOk_jtpWoC0BkU56Vvanw0ECREG4INKql3PZ9-eWZ3TEOWE1yquB7OGq-jRa7lag_LtqOc8Ez8H_Y_R1XExxFZVS7sX7Fg9o6VP81RbbWhaM4_lC0Lm7cgwzA30FFsNHKZQIaoPGjQHx3OXgoO-teFdqtANDXZJiHYRtHgamVYu1S4wKJRIfkhMbtt04eVgy7Xn98d8qrGvKSnLvDgek0lohUUzb0xO_KoeU6w',
+                sliderImages: [
+                    { src: '', alt: 'Map of Delhi' }, // Set dynamically
+                    { src: 'https://via.placeholder.com/400x320?text=Red+Fort', alt: 'Red Fort in Delhi' },
+                    { src: 'https://via.placeholder.com/400x320?text=Delhi+Culture', alt: 'Cultural scene in Delhi' }
+                ]
+            },
+            Mumbai: {
+                state: 'Maharashtra',
+                description: 'Mumbai is the financial capital of India and home to Bollywood. Located on the west coast, it is India\'s most populous city and a melting pot of cultures. The city is known for its colonial architecture, vibrant street life, and the entertainment industry.',
+                attractions: 'Gateway of India, Marine Drive, Elephanta Caves',
+                climate: 'Tropical with high levels of humidity throughout the year',
+                mapImage: 'https://www.google.com/maps/vt/data=p-1KrOCvUnZ7mHX1-CwpwbqmGuzsaW_GT8rG3IisNyDM9PdxI59P3kYKqf9zMN-MGkdmuogXnpQLsjvTW15_XySHSO2Ir_rhLSkTrDCmvPRuz2KIpn7he7cylzEKOYaSb33cJL7yM67UhOxF2DW33KWBiJXFTHprebRe30D-BqZBOKqEzy9zIiCKrZUPTB2sstJqIEXlmCUxWSpevaJbsM7xFerAgj8hDZya5kfpugGzyRMtcEh9ABK8xV3mZEXIyDGu7RGTfWgW6hxM6bE1dvEJW_POaWqR',
+                sliderImages: [
+                    { src: '', alt: 'Map of Mumbai' },
+                    { src: 'data:image/jpeg;base64,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', alt: 'Gateway of India in Mumbai' },
+                    { src: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGPm769dddsm3zeagBHVX217NMchNGAuCX6w&s', alt: 'Cultural scene in Mumbai' }
+                ]
+            },
+            Kolkata: {
+                state: 'West Bengal',
+                description: 'Kolkata is known for its colonial architecture, cultural festivals, and artistic heritage. It was the capital of British India until 1911 and is often referred to as the "Cultural Capital of India" for its rich literary, artistic, and revolutionary history.',
+                attractions: 'Victoria Memorial, Howrah Bridge, Park Street',
+                climate: 'Tropical wet-and-dry with hot and humid summers',
+                mapImage: 'https://www.google.com/maps/vt/data=b6MDizPPYD0vkYH7bqCWdwKlId6KWlnEAnvV0ltdhQRzYR4fATcrOaXncESSNbGigYKTSRm9DOvFmrEX3GCEVZMdyiWfLqLfKbQ3vfYvra0jdgN-ol3AiRv__mcam8JW9bVk0HwdSS97_jGk6n21xINZNLEeSBRbTfG3sp4JEDzumLSFNZjnCDgFw1QzR76XvdzNTocsazohsKZU69ckmZRKOcFQS00f10Yjap39PHYTMOcH85uTFDL47Rj32Ks-EF6UI72GogFPlsLx3ucDpMPdiAMBncXb',
+                sliderImages: [
+                    { src: '', alt: 'Map of Kolkata' },
+                    { src: 'https://via.placeholder.com/400x320?text=Victoria+Memorial', alt: 'Victoria Memorial in Kolkata' },
+                    { src: 'https://via.placeholder.com/400x320?text=Kolkata+Culture', alt: 'Cultural scene in Kolkata' }
+                ]
+            },
+            Chennai: {
+                state: 'Tamil Nadu',
+                description: 'Chennai is a major cultural, economic and educational center in South India. Known as the "Detroit of India" for its auto industry, Chennai is also famous for its Dravidian-style temples, beaches, and classical South Indian arts.',
+                attractions: 'Marina Beach, Kapaleeshwarar Temple, Fort St. George',
+                climate: 'Hot and humid most of the year with northeastern monsoons',
+                mapImage: 'https://www.google.com/maps/vt/data=pNY4E6BZyQHdCZ9OcHZ9lV7dVdt4uRbaC7ViDr7u0t8XgKsvg_wT_YzolfYp1djBJsISOiFtF_0sDckgkSuTkLpDiVMN3ZTl6xDX9T8vuANUtg586MxOtr20_wkJyy5OzmK9IxiojGkUYcApcQNFBWqqlyYhN8-GKFBxbY1WjBMEgTdvlId4GqlITcQg5mQRSb_mb_DCkWzg_A9AZgDzuYxMBWGInoibWWxuJnqsTk9kP7xijD-7PsJuMnykn8A9wMIXT_9ss4xtoxjyDKzjr8lSSc8IwJFd',
+                sliderImages: [
+                    { src: '', alt: 'Map of Chennai' },
+                    { src: 'https://via.placeholder.com/400x320?text=Marina+Beach', alt: 'Marina Beach in Chennai' },
+                    { src: 'https://via.placeholder.com/400x320?text=Chennai+Culture', alt: 'Cultural scene in Chennai' }
+                ]
+            },
+            Bangalore: {
+                state: 'Karnataka',
+                description: 'Bangalore is known as India\'s Silicon Valley and is a major IT hub. With its pleasant climate year-round, the city is home to numerous parks and gardens earning it the nickname "Garden City." It\'s a cosmopolitan city with a vibrant startup ecosystem.',
+                attractions: 'Lalbagh Botanical Gardens, Bangalore Palace, Cubbon Park',
+                climate: 'Moderate all year round with pleasant temperatures',
+                mapImage: 'https://www.google.com/maps/vt/data=4mfcIkuASVO21zMsz1MzPG2qzqsfjpNHv6rR2YKv3YyGtBMZzJaGKt_aweOYb3AHlygUeNk91GBSgaGO6lq8Kqr27R1s2BB39hYdjRa74wMx-9IswnRbxdVtxNCGUEkTHGzTZVCxrhaje7LOLIykeztXURwaUDNwL2zhhvibW7GuA_N9ZyV74fu7DGYEY7dXkIu-q1ssHOoELDlQCej_rRnyLavDZftVOpsUYH4t3GLX4Wqym4_vvbHq-q3dLX-iIYplVTiI74dO2igGhfAfnj0TvQTT-MgT',
+                sliderImages: [
+                    { src: '', alt: 'Map of Bangalore' },
+                    { src: 'https://via.placeholder.com/400x320?text=Lalbagh', alt: 'Lalbagh Botanical Gardens in Bangalore' },
+                    { src: 'https://via.placeholder.com/400x320?text=Bangalore+Culture', alt: 'Cultural scene in Bangalore' }
+                ]
+            },
+            Hyderabad: {
+                state: 'Telangana',
+                description: 'Hyderabad is known for its rich history, food and its booming tech industry. The city presents an intriguing blend of Hindu-Muslim cultures with the Old City featuring historic monuments while Hi-Tech City represents its modern face as a global IT hub.',
+                attractions: 'Charminar, Golconda Fort, Hussain Sagar Lake',
+                climate: 'Tropical with hot summers and moderate winters',
+                mapImage: 'https://www.google.com/maps/vt/data=EBUdEygV9XhIXUNRYjwGOja_v4vGndwieVNBUQ04N6bV7ipF5yJ-k1MEDdbofsqy7NKGJrkCm3MBsqsREajx2VYsshd1gihphEtmm555XEQQZeWZu_yxtY4gPO9Zb0-L0b0cQN8AdxPrg1EnQerDZrWDO_MckPri4gmcKnr4WTkOpNOLkyjDTfmfl_53fJMCSSRacxJ10SapOGVeHolbX87F4NLbzbYxnNjFcIEyvBZQk8CRx5q9v5td2ICXeiQgNYEOgDYgD8wu6TjVTKDYkal4E-Ha4a3q',
+                sliderImages: [
+                    { src: '', alt: 'Map of Hyderabad' },
+                    { src: 'https://via.placeholder.com/400x320?text=Charminar', alt: 'Charminar in Hyderabad' },
+                    { src: 'https://via.placeholder.com/400x320?text=Hyderabad+Culture', alt: 'Cultural scene in Hyderabad' }
+                ]
+            },
+            Ahmedabad: {
+                state: 'Gujarat',
+                description: 'Ahmedabad is the largest city in Gujarat and an important economic and industrial hub. Its old city has remarkable Islamic architecture and Hindu temples. The city is known for its textile industry and as the home of Mahatma Gandhi\'s Sabarmati Ashram.',
+                attractions: 'Sabarmati Ashram, Jama Masjid, Kankaria Lake',
+                climate: 'Hot semi-arid with hot summers and mild winters',
+                mapImage: 'https://www.google.com/maps/vt/data=jHFyPkQdY-NhFUv7NdEAMpS6z0P2P1v_apHteRL-9qRAFReRmPU3ZuO-dOlHbni1BImPkGNCfIIwZ84P_wYgzIU6USqdCa5mBhJ464AI_3xXt2i3x1aMpgYarZq3tAPwKgvc-DptZDbXfV8V2R8Nnj-BVBenoF48z5tMN0QitGVi_3-gTC_6xuBKd9bGJoVdzbNW8Xn0ukPmfDYZuFDmvgvhRkk-IBqaZDD-NaPO4c7PU6cW21SNlb_7ll5LjNl3wyiy6RVEt8feGHureIWOAAhcosFU2b_4',
+                sliderImages: [
+                    { src: '', alt: 'Map of Ahmedabad' },
+                    { src: 'https://via.placeholder.com/400x320?text=Sabarmati+Ashram', alt: 'Sabarmati Ashram in Ahmedabad' },
+                    { src: 'https://via.placeholder.com/400x320?text=Ahmedabad+Culture', alt: 'Cultural scene in Ahmedabad' }
+                ]
+            },
+            Pune: {
+                state: 'Maharashtra',
+                description: 'Pune is known as the "Oxford of the East" due to its educational institutions. It was once the base of the Peshwas (prime ministers) of the Maratha Empire and is now an important industrial center. The city offers a perfect blend of tradition and modernity.',
+                attractions: 'Shaniwar Wada, Aga Khan Palace, Sinhagad Fort',
+                climate: 'Tropical wet and dry with moderate temperatures',
+                mapImage: 'https://www.google.com/maps/vt/data=Mv-m0QdpchiT6cErcYrkb-vutMOERRQC2UMsA33Kc-oEMZuHhkMIs-v5oxyS-Wu_vxOrtpxTOM7YLhAnnkuabmDZ-dIgMT9781tAEzrXw7R4GNWd-fC2x-ja4vuYqGDMTCr81PpFlkO95GCNCZyvnWA-irDJM_a3gSrc0to2EKoRyT3Jca5CBkJXaf-ZoVnb_-dGM0mqmPsqsZbTuCk7cCrjNxsA63VFOh6yzBfiN0uWRJ4xP0XBTg6ZlXhqC3mJ7NPZlwNK7kjMg8g_JKJP_FypjMvz5XXX',
+                sliderImages: [
+                    { src: '', alt: 'Map of Pune' }, // Set dynamically
+                    { src: 'https://via.placeholder.com/400x320?text=Shaniwar+Wada', alt: 'Shaniwar Wada in Pune' },
+                    { src: 'https://via.placeholder.com/400x320?text=Pune+Culture', alt: 'Cultural scene in Pune' }
+                ]
+            },
+            Jaipur: {
+                state: 'Rajasthan',
+                description: 'Jaipur, known as the Pink City, is famous for its historic palaces, forts, and vibrant culture. The city is part of the Golden Triangle tourist circuit and is renowned for its Rajput architecture and bustling bazaars.',
+                attractions: 'Amber Fort, Hawa Mahal, City Palace',
+                climate: 'Hot semi-arid with extreme summers and mild winters',
+                mapImage: 'https://www.google.com/maps/vt/data=9yK7k6u3f3e8Y7p2q3z7m8v9w0x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y8z9a0b1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8v9w0x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y8z9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Jaipur' },
+                    { src: 'https://via.placeholder.com/400x320?text=Amber+Fort', alt: 'Amber Fort in Jaipur' },
+                    { src: 'https://via.placeholder.com/400x320?text=Jaipur+Culture', alt: 'Cultural scene in Jaipur' }
+                ]
+            },
+            Lucknow: {
+                state: 'Uttar Pradesh',
+                description: 'Lucknow, the city of Nawabs, is known for its refined culture, Awadhi cuisine, and historical monuments. It is a center of Urdu literature and traditional arts, with a rich legacy of Mughal and British architecture.',
+                attractions: 'Bara Imambara, Rumi Darwaza, Hazratganj',
+                climate: 'Humid subtropical with hot summers and cool winters',
+                mapImage: 'https://www.google.com/maps/vt/data=8x7y6z5a4b3c2d1e0f9g8h7i6j5k4l3m2n1o0p9q8r7s6t5u4v3w2x1y0z9a8b7c6d5e4f3g2h1i0j9k8l7m6n5o4p3q2r1s0t9u8v7w6x5y4z3a2b1c0d9e8f7g6h5i4j3k2l1m0n9o8p7q6r5s4t3u2v1w0x9y8z7a6b5c4d3e2f1g0h9i8j7k6l5m4n3o2p1q0r9s8t7u6v5w4x3y2z1a0b9c8d7e6f5g4h3i2j1k0l9m8n7o6p5q4r3s2t1u0v9w8x7y6z5a4b3c2d1e0f9g8h7i6j5k4l3m2n1o0p9q8r7s6t5u4v3w2x1y0z9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Lucknow' },
+                    { src: 'https://via.placeholder.com/400x320?text=Bara+Imambara', alt: 'Bara Imambara in Lucknow' },
+                    { src: 'https://via.placeholder.com/400x320?text=Lucknow+Culture', alt: 'Cultural scene in Lucknow' }
+                ]
+            },
+            Kochi: {
+                state: 'Kerala',
+                description: 'Kochi, also known as Cochin, is a major port city on the southwest coast of India. Known as the "Queen of the Arabian Sea," it is famous for its backwaters, Chinese fishing nets, and a blend of Portuguese, Dutch, and British colonial influences.',
+                attractions: 'Fort Kochi, Mattancherry Palace, Chinese Fishing Nets',
+                climate: 'Tropical monsoon with high humidity and heavy rainfall',
+                mapImage: 'https://www.google.com/maps/vt/data=7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9v8u7t6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1z0y9x8w7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Kochi' },
+                    { src: 'https://via.placeholder.com/400x320?text=Fort+Kochi', alt: 'Fort Kochi in Kochi' },
+                    { src: 'https://via.placeholder.com/400x320?text=Kochi+Culture', alt: 'Cultural scene in Kochi' }
+                ]
+            },
+            Shimla: {
+                state: 'Himachal Pradesh',
+                description: 'Shimla is a popular hill station and the capital of Himachal Pradesh. Known for its colonial architecture and scenic beauty, it was the summer capital of British India. The city is surrounded by pine forests and snow-capped mountains.',
+                attractions: 'The Ridge, Mall Road, Jakhoo Temple',
+                climate: 'Cool summers and cold winters with occasional snowfall',
+                mapImage: 'https://www.google.com/maps/vt/data=6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9v8u7t6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1z0y9x8w7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Shimla' },
+                    { src: 'https://via.placeholder.com/400x320?text=The+Ridge', alt: 'The Ridge in Shimla' },
+                    { src: 'https://via.placeholder.com/400x320?text=Shimla+Culture', alt: 'Cultural scene in Shimla' }
+                ]
+            },
+            Goa: {
+                state: 'Goa',
+                description: 'Goa is India’s smallest state, famous for its beaches, nightlife, and Portuguese heritage. A popular tourist destination, it offers a blend of Indian and Western cultures, with historic churches, temples, and vibrant markets.',
+                attractions: 'Baga Beach, Basilica of Bom Jesus, Fort Aguada',
+                climate: 'Tropical monsoon with hot and humid weather',
+                mapImage: 'https://www.google.com/maps/vt/data=5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9v8u7t6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1z0y9x8w7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Goa' },
+                    { src: 'https://via.placeholder.com/400x320?text=Baga+Beach', alt: 'Baga Beach in Goa' },
+                    { src: 'https://via.placeholder.com/400x320?text=Goa+Culture', alt: 'Cultural scene in Goa' }
+                ]
+            },
+            Varanasi: {
+                state: 'Uttar Pradesh',
+                description: 'Varanasi, one of the world’s oldest living cities, is a spiritual hub for Hindus. Situated on the banks of the Ganges River, it is famous for its ghats, temples, and vibrant religious ceremonies.',
+                attractions: 'Kashi Vishwanath Temple, Dashashwamedh Ghat, Sarnath',
+                climate: 'Humid subtropical with hot summers and cool winters',
+                mapImage: 'https://www.google.com/maps/vt/data=4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9v8u7t6s5r4q3p2o1n0m9l8k7j6i5h4g3f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1z0y9x8w7v6u5t4s3r2q1p0o9n8m7l6k5j4i3h2g1f0e9d8c7b6a5z4y3x2w1v0u9t8s7r6q5p4o3n2m1l0k9j8i7h6g5f4e3d2c1b0a9z8y7x6w5v4u3t2s1r0q9p8o7n6m5l4k3j2i1h0g9f8e7d6c5b4a3z2y1x0w9',
+                sliderImages: [
+                    { src: '', alt: 'Map of Varanasi' },
+                    { src: 'https://via.placeholder.com/400x320?text=Dashashwamedh+Ghat', alt: 'Dashashwamedh Ghat in Varanasi' },
+                    { src: 'https://via.placeholder.com/400x320?text=Varanasi+Culture', alt: 'Cultural scene in Varanasi' }
+                ]
+            }
+        };
+
+        // Weather icon mapping
+        const weatherIcons = {
+            '01d': 'fas fa-sun text-yellow-400',
+            '01n': 'fas fa-moon text-blue-200',
+            '02d': 'fas fa-cloud-sun text-yellow-300',
+            '02n': 'fas fa-cloud-moon text-blue-300',
+            '03d': 'fas fa-cloud text-gray-300',
+            '03n': 'fas fa-cloud text-gray-400',
+            '04d': 'fas fa-cloud text-gray-400',
+            '04n': 'fas fa-cloud text-gray-500',
+            '09d': 'fas fa-cloud-showers-heavy text-blue-400',
+            '09n': 'fas fa-cloud-showers-heavy text-blue-500',
+            '10d': 'fas fa-cloud-sun-rain text-blue-300',
+            '10n': 'fas fa-cloud-moon-rain text-blue-400',
+            '11d': 'fas fa-bolt text-yellow-500',
+            '11n': 'fas fa-bolt text-yellow-600',
+            '13d': 'fas fa-snowflake text-blue-200',
+            '13n': 'fas fa-snowflake text-blue-300',
+            '50d': 'fas fa-smog text-gray-300',
+            '50n': 'fas fa-smog text-gray-400'
+        };
+
+        // Get city from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let city = urlParams.get('city') || 'Delhi';
+
+        // Update recent searches
+        function updateRecentSearches(city) {
+            let searches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+            searches = searches.filter(search => search !== city);
+            searches.unshift(city);
+            searches = searches.slice(0, 5);
+            localStorage.setItem('recentSearches', JSON.stringify(searches));
+
+            elements.recentSearches.classList.remove('hidden');
+            elements.recentSearchesList.innerHTML = searches.map(search => `
+                <button class="px-3 py-1 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition duration-300" onclick="navigateToWeather('${search}')" aria-label="View weather for ${search}">${search}</button>
+            `).join('');
+        }
+
+        // Load recent searches on page load
+        function loadRecentSearches() {
+            const searches = JSON.parse(localStorage.getItem('recentSearches')) || [];
+            if (searches.length > 0) {
+                elements.recentSearches.classList.remove('hidden');
+                elements.recentSearchesList.innerHTML = searches.map(search => `
+                    <button class="px-3 py-1 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition duration-300" onclick="navigateToWeather('${search}')" aria-label="View weather for ${search}">${search}</button>
+                `).join('');
+            }
+        }
+
+        // Navigate to weather page
+        function navigateToWeather(city) {
+            if (city) {
+                window.location.href = `weather.html?city=${encodeURIComponent(city)}`;
+            }
+        }
+
+        // Fetch weather data
+        async function fetchWeather(city) {
+            elements.weatherInfo.innerHTML = '<div class="spinner"></div>';
+            try {
+                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city},IN&appid=${apiKey}&units=metric`);
+                const data = await response.json();
+                if (data.cod === 200) {
+                    updateWeatherUI(data);
+                    updateBackground(data.weather[0].main);
+                    updateCityInfo(city);
+                    updateRecentSearches(city);
+                } else {
+                    elements.weatherInfo.innerHTML = '<p class="text-red-300 text-center">City not found. Please try again.</p>';
+                    elements.locationInfo.classList.add('hidden');
+                }
+            } catch (error) {
+                elements.weatherInfo.innerHTML = '<p class="text-red-300 text-center">Error fetching weather data. Please try again later.</p>';
+                elements.locationInfo.classList.add('hidden');
+            }
+        }
+
+        // Update weather UI
+        function updateWeatherUI(data) {
+            const { main, weather, wind, sys, name } = data;
+            const iconClass = weatherIcons[weather[0].icon] || 'fas fa-cloud';
+            const sunrise = new Date(sys.sunrise * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const sunset = new Date(sys.sunset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            elements.weatherInfo.innerHTML = `
+                <div class="glass rounded-xl p-6 animate-flip-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <i class="${iconClass} text-5xl mr-4 weather-icon"></i>
+                            <div>
+                                <h2 class="text-3xl font-bold">${name}</h2>
+                                <p class="text-lg capitalize">${weather[0].description}</p>
+                            </div>
+                        </div>
+                        <p class="text-5xl font-extrabold">${Math.round(main.temp)}°C</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 weather-details">
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Feels Like</p>
+                            <p class="text-lg font-semibold">${Math.round(main.feels_like)}°C</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Humidity</p>
+                            <p class="text-lg font-semibold">${main.humidity}%</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Wind Speed</p>
+                            <p class="text-lg font-semibold">${wind.speed} m/s</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Pressure</p>
+                            <p class="text-lg font-semibold">${main.pressure} hPa</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Sunrise</p>
+                            <p class="text-lg font-semibold">${sunrise}</p>
+                        </div>
+                        <div class="glass-card p-4 rounded-lg city-card">
+                            <p class="text-sm opacity-80">Sunset</p>
+                            <p class="text-lg font-semibold">${sunset}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update background based on weather condition
+        function updateBackground(weather) {
+            let bgImage = '';
+            switch (weather.toLowerCase()) {
+                case 'clear':
+                    bgImage = 'linear-gradient(to bottom right, #facc15, #f97316)';
+                    break;
+                case 'clouds':
+                    bgImage = 'linear-gradient(to bottom right, #94a3b8, #4b5563)';
+                    break;
+                case 'rain':
+                case 'drizzle':
+                    bgImage = 'linear-gradient(to bottom right, #0284c7, #1e3a8a)';
+                    elements.rainContainer.classList.remove('hidden');
+                    createRain();
+                    break;
+                case 'thunderstorm':
+                    bgImage = 'linear-gradient(to bottom right, #1e293b, #0f172a)';
+                    break;
+                case 'snow':
+                    bgImage = 'linear-gradient(to bottom right, #e5e7eb, #bfdbfe)';
+                    break;
+                case 'mist':
+                case 'fog':
+                    bgImage = 'linear-gradient(to bottom right, #d1d5db, #9ca3af)';
+                    break;
+                default:
+                    bgImage = 'linear-gradient(to bottom right, #60a5fa, #4f46e5, #a855f7)';
+            }
+            document.body.style.backgroundImage = bgImage;
+            createClouds();
+        }
+
+        // Create clouds
+        function createClouds() {
+            elements.weatherBackground.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const cloud = document.createElement('i');
+                cloud.className = 'fas fa-cloud cloud';
+                cloud.style.fontSize = `${Math.random() * 40 + 30}px`;
+                cloud.style.top = `${Math.random() * 50}%`;
+                cloud.style.animationDuration = `${Math.random() * 20 + 20}s`;
+                cloud.style.animationDelay = `${Math.random() * 5}s`;
+                elements.weatherBackground.appendChild(cloud);
+            }
+        }
+
+        // Create rain animation
+        function createRain() {
+            elements.rainContainer.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const raindrop = document.createElement('div');
+                raindrop.className = 'raindrop';
+                raindrop.style.left = `${Math.random() * 100}%`;
+                raindrop.style.height = `${Math.random() * 20 + 10}px`;
+                raindrop.style.animation = `rainDrop ${Math.random() * 1 + 0.5}s linear infinite`;
+                raindrop.style.animationDelay = `${Math.random() * 2}s`;
+                elements.rainContainer.appendChild(raindrop);
+            }
+        }
+
+        // Update city information and slider
+        function updateCityInfo(city) {
+            const data = cityData[city] || {
+                state: 'Unknown',
+                description: 'No information available for this city.',
+                attractions: 'Unknown',
+                climate: 'Unknown',
+                mapImage: fallbackMapImage,
+                sliderImages: [{ src: fallbackMapImage, alt: 'Map not available' }]
+            };
+
+            // Update city info
+            elements.cityDescription.textContent = data.description;
+            elements.stateName.textContent = `State: ${data.state}`;
+            elements.attractions.textContent = `Attractions: ${data.attractions}`;
+            elements.climate.textContent = `Climate: ${data.climate}`;
+
+            // Update slider images
+            const sliderImages = data.sliderImages.map(img => ({
+                ...img,
+                src: img.src || data.mapImage // Use mapImage for first slide if src is empty
+            }));
+
+            elements.slidesContainer.innerHTML = sliderImages.map((img, index) => `
+                <div class="slide ${index === 0 ? 'active' : ''}" aria-hidden="${index !== 0}">
+                    <img src="${img.src}" alt="${img.alt}" loading="lazy">
+                </div>
+            `).join('');
+
+            elements.sliderDots.innerHTML = sliderImages.map((_, index) => `
+                <div class="slider-dot ${index === 0 ? 'active' : ''}" data-index="${index}" role="button" aria-label="Go to slide ${index + 1}"></div>
+            `).join('');
+
+            elements.locationInfo.classList.remove('hidden');
+            initializeSlider();
+        }
+
+        // Initialize slider
+        function initializeSlider() {
+            let currentIndex = 0;
+            const slides = elements.slidesContainer.querySelectorAll('.slide');
+            const dots = elements.sliderDots.querySelectorAll('.slider-dot');
+
+            function showSlide(index) {
+                slides.forEach((slide, i) => {
+                    slide.classList.toggle('active', i === index);
+                    slide.setAttribute('aria-hidden', i !== index);
+                });
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === index);
+                });
+                currentIndex = index;
+            }
+
+            elements.prevBtn.addEventListener('click', () => {
+                let newIndex = currentIndex - 1;
+                if (newIndex < 0) newIndex = slides.length - 1;
+                showSlide(newIndex);
+            });
+
+            elements.nextBtn.addEventListener('click', () => {
+                let newIndex = (currentIndex + 1) % slides.length;
+                showSlide(newIndex);
+            });
+
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const index = parseInt(dot.dataset.index);
+                    showSlide(index);
+                });
+            });
+
+            // Auto-slide every 5 seconds
+            setInterval(() => {
+                let newIndex = (currentIndex + 1) % slides.length;
+                showSlide(newIndex);
+            }, 5000);
+        }
+
+        // Event listeners
+        function initializeEventListeners() {
+            elements.searchBtn.addEventListener('click', () => {
+                const city = elements.cityInput.value.trim() || elements.citySelect.value;
+                if (city) {
+                    window.location.href = `weather.html?city=${encodeURIComponent(city)}`;
+                }
+            });
+
+            elements.cityInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const city = elements.cityInput.value.trim();
+                    if (city) {
+                        window.location.href = `weather.html?city=${encodeURIComponent(city)}`;
+                    }
+                }
+            });
+
+            elements.citySelect.addEventListener('change', () => {
+                const city = elements.citySelect.value;
+                if (city) {
+                    window.location.href = `weather.html?city=${encodeURIComponent(city)}`;
+                }
+            });
+        }
+
+        // Initialize
+        function init() {
+            loadRecentSearches();
+            fetchWeather(city);
+            initializeEventListeners();
+        }
+
+        init();
+    </script>
+</body>
+</html>
